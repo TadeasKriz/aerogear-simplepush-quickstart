@@ -1,5 +1,11 @@
 (function() {
-    var mailEndpoint, mailRequest, SPClient;
+    var mailEndpoint, mailRequest, SPClient, UPClient;
+
+    var variantId = ""; // put simplepush variantId here
+    var variantSecret = ""; // put simplepush variantSecret here
+    var registryUrl = "http://localhost:8080/ag-push/rest/registry/device";
+
+    var UPClient = AeroGear.UnifiedPushClient(variantId, variantSecret, registryUrl);
 
     // onConnect callback function:
     function spConnect() {
@@ -10,9 +16,17 @@
 
         // the DOMRequest returns 'successfully':
         mailRequest.onsuccess = function( event ) {
-            
             // extract the endpoint object from the event: 
             mailEndpoint = event.target.result;
+            
+            var metadata = {
+                deviceToken: mailEndpoint.channelID,
+                alias: "some-alias", // for example user's email
+                category: "broadcast"
+            };
+
+            UPClient.registerWithPushServer(metadata);
+
             // store the channelID...
             appendTextArea("Subscribed to Mail messages on " + mailEndpoint.channelID);
         };
@@ -45,6 +59,8 @@
     // onClose callback function:
     function spClose() {
         $("#reconnect").show();
+        // TODO should we really unregister when disconnected?
+        UPClient.unregisterWithPushServer(mailEndpoint.channelID);
         appendTextArea("\nConnection Lost!\n");
     }
 
